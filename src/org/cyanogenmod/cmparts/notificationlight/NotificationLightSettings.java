@@ -171,6 +171,7 @@ public class NotificationLightSettings extends SettingsPreferenceFragment implem
         } else {
             mApplicationPrefList = (PreferenceGroup) findPreference("applications_list");
             mApplicationPrefList.setOrderingAsAdded(false);
+        prefSet.removePreference(mApplicationPrefList);
         }
 
         // Get launch-able applications
@@ -234,7 +235,6 @@ public class NotificationLightSettings extends SettingsPreferenceFragment implem
         }
 
         if (mLedCanPulse || mMultiColorLed) {
-            mApplicationPrefList = (PreferenceGroup) findPreference("applications_list");
             mApplicationPrefList.setOrderingAsAdded(false);
         }
     }
@@ -296,6 +296,19 @@ public class NotificationLightSettings extends SettingsPreferenceFragment implem
                     mApplicationPrefList.addPreference(pref);
                 } catch (NameNotFoundException e) {
                     // Do nothing
+                }
+            }
+
+            // Check if "Apps" Group should be shown
+            PreferenceScreen prefSet = getPreferenceScreen();
+            PreferenceGroup prefGrp = (PreferenceGroup) findPreference("applications_list");
+            if (mApplicationPrefList.getPreferenceCount() == 0) {
+                if (prefGrp != null) {
+                    prefSet.removePreference(mApplicationPrefList);
+                }
+            } else {
+                if (prefGrp == null) {
+                    prefSet.addPreference(mApplicationPrefList);
                 }
             }
 

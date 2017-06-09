@@ -45,6 +45,7 @@ public class BatteryLightSettings extends SettingsPreferenceFragment implements
     private static final String REALLY_FULL_COLOR_PREF = "really_full_color";
     private static final String LIGHT_ENABLED_PREF = "battery_light_enabled";
     private static final String PULSE_ENABLED_PREF = "battery_light_pulse";
+    private static final String BATTERY_LIGHT_ONLY_FULL_PREF = "battery_light_only_fully_charged";
 
     private PreferenceGroup mColorPrefs;
     private ApplicationLightPreference mLowColorPref;
@@ -53,6 +54,8 @@ public class BatteryLightSettings extends SettingsPreferenceFragment implements
     private ApplicationLightPreference mReallyFullColorPref;
     private CMSystemSettingSwitchPreference mLightEnabledPref;
     private CMSystemSettingSwitchPreference mPulseEnabledPref;
+    private CMSystemSettingSwitchPreference mOnlyFullPref;
+    private boolean mBatteryLightEnabled;
 
     private static final int MENU_RESET = Menu.FIRST;
 
@@ -64,11 +67,23 @@ public class BatteryLightSettings extends SettingsPreferenceFragment implements
         getActivity().getActionBar().setTitle(R.string.battery_light_title);
 
         PreferenceScreen prefSet = getPreferenceScreen();
+        ContentResolver resolver = getActivity().getContentResolver();
 
         PreferenceGroup mGeneralPrefs = (PreferenceGroup) prefSet.findPreference("general_section");
 
+        mBatteryLightEnabled = getResources().getBoolean(
+                com.android.internal.R.bool.config_intrusiveBatteryLed);
+
         mLightEnabledPref = (CMSystemSettingSwitchPreference) prefSet.findPreference(LIGHT_ENABLED_PREF);
+        mLightEnabledPref.setChecked(CMSettings.System.getInt(resolver, CMSettings.System.BATTERY_LIGHT_ENABLED, mBatteryLightEnabled ? 1 : 0) != 0);
+        mLightEnabledPref.setOnPreferenceChangeListener(this);
+
         mPulseEnabledPref = (CMSystemSettingSwitchPreference) prefSet.findPreference(PULSE_ENABLED_PREF);
+        mPulseEnabledPref.setChecked(CMSettings.System.getInt(resolver, CMSettings.System.BATTERY_LIGHT_PULSE, mBatteryLightEnabled ? 1 : 0) != 0);
+        mPulseEnabledPref.setOnPreferenceChangeListener(this);
+
+        mOnlyFullPref = (CMSystemSettingSwitchPreference) prefSet.findPreference(BATTERY_LIGHT_ONLY_FULL_PREF);
+        mOnlyFullPref.setOnPreferenceChangeListener(this);
 
         final NotificationManager nm = getContext().getSystemService(NotificationManager.class);
 
@@ -201,14 +216,37 @@ public class BatteryLightSettings extends SettingsPreferenceFragment implements
 
         if (mLightEnabledPref != null) mLightEnabledPref.setChecked(batteryLightEnabled);
         if (mPulseEnabledPref != null) mPulseEnabledPref.setChecked(batteryLightPulseEnabled);
+        if (mOnlyFullPref != null) mOnlyFullPref.setChecked(false);
 
         resetColors();
     }
 
     @Override
     public boolean onPreferenceChange(Preference preference, Object objValue) {
-        ApplicationLightPreference lightPref = (ApplicationLightPreference) preference;
-        updateValues(lightPref.getKey(), lightPref.getColor());
+        if (preference == mLightEnabledPref) {
+            boolean value = (Boolean) objValue;
+            CMSettings.System.putInt(getActivity().getContentResolver(),
+                    CMSettings.System.BATTERY_LIGHT_ENABLED, value ? 1:0);
+        } else if (preference == mPulseEnabledPref) {
+            boolean value = (Boolean) objValue;
+            CMSettings.System.putInt(getActivity().getContentResolver(),
+                    CMSettings.System.BATTERY_LIGHT_PULSE, value ? 1:0);
+        } else if (preference == mOnlyFullPref) {
+            boolean value = (Boolean) objValue;
+            // If enabled, disable all but really full color preference.
+            if (mLowColorPref != null) {
+                mLowColorPref.setEnabled(!value);
+            }
+            if (mMediumColorPref != null) {
+                mMediumColorPref.setEnabled(!value);
+            }
+            if (mFullColorPref != null) {
+                mFullColorPref.setEnabled(!value);
+            }
+        } else {
+            ApplicationLightPreference lightPref = (ApplicationLightPreference) preference;
+            updateValues(lightPref.getKey(), lightPref.getColor());
+        }
         return true;
     }
 

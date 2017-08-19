@@ -275,6 +275,7 @@
         <item>5%</item>
         <item>15%</item>
         <item>25%</item>
+        <item>35%</item>
     </string-array>
 
     <!-- Auto power save mode: Allowable trigger threshold levels.
@@ -284,6 +285,7 @@
         <item>5</item>
         <item>15</item>
         <item>25</item>
+        <item>35</item>
     </string-array>
 
     <!-- Expanded desktop styles -->
